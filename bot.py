@@ -1,22 +1,23 @@
 import os
-import anthropic
 import telebot
-from moviepy.editor import *
+import google.generativeai as genai
+from moviepy.editor import ImageClip, concatenate_videoclips
 from PIL import Image, ImageDraw, ImageFont
 import textwrap
 import tempfile
 
 BOT_TOKEN = "8757571553:AAFMbfrVqyUi4BaqY-X92WSD5LicuZzT_Qw"
-ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY")
+GEMINI_API_KEY = "AIzaSyBSBlZ3-wiZQX-4bkb8pxciMbHuGTBnLzs"
+
+genai.configure(api_key=GEMINI_API_KEY)
+model = genai.GenerativeModel("gemini-1.5-flash")
 
 bot = telebot.TeleBot(BOT_TOKEN)
-client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
-
 user_data = {}
 
 @bot.message_handler(commands=['start'])
 def start(message):
-    bot.send_message(message.chat.id, 
+    bot.send_message(message.chat.id,
         "🌿 أهلاً بك في بوت تصميم القصائد\n\nأرسل لي بيت شعر وسأكمل القصيدة وأصنع لك فيديو جميل 🎬")
 
 @bot.message_handler(func=lambda m: m.text not in ['30 ثانية', '1 دقيقة', '2 دقيقة'])
@@ -39,12 +40,10 @@ def handle_duration(message):
     verse = user_data[chat_id]['verse']
     bot.send_message(chat_id, "⏳ جاري إنشاء القصيدة والفيديو...")
     num_verses = max(3, duration // 10)
-    response = client.messages.create(
-        model="claude-sonnet-4-20250514",
-        max_tokens=1000,
-        messages=[{"role": "user", "content": f"أكمل هذه القصيدة الحسينية بأسلوب عراقي عاطفي. البيت الأول: {verse}\nاكتب {num_verses} أبيات فقط، كل بيت في سطر منفصل، بدون ترقيم."}]
+    response = model.generate_content(
+        f"أكمل هذه القصيدة الحسينية بأسلوب عراقي عاطفي. البيت الأول: {verse}\nاكتب {num_verses} أبيات فقط، كل بيت في سطر منفصل، بدون ترقيم."
     )
-    full_poem = verse + "\n" + response.content[0].text
+    full_poem = verse + "\n" + response.text
     verses = [v.strip() for v in full_poem.split('\n') if v.strip()]
     clips = []
     verse_duration = duration / len(verses[:num_verses])
