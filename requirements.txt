@@ -1,4 +1,4 @@
 pyTelegramBotAPI
-anthropic
+google-generativeai
 moviepy
 Pillow
